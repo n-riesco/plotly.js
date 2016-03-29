@@ -2596,7 +2596,6 @@ function makePlotFramework(gd) {
     if(fullLayout._hasCartesian) makeCartesianPlotFramwork(gd, subplots);
 
     // single shape and pie layers for the whole plot
-    fullLayout._shapelayer = fullLayout._paper.append('g').classed('shapelayer', true);
     fullLayout._pielayer = fullLayout._paper.append('g').classed('pielayer', true);
 
     // fill in image server scrape-svg
@@ -2728,7 +2727,11 @@ function makeCartesianPlotFramwork(gd, subplots) {
                 plotinfo.overgrid = plotgroup.append('g');
                 plotinfo.zerolinelayer = plotgroup.append('g');
                 plotinfo.overzero = plotgroup.append('g');
+
+                fullLayout._shapeLowerLayer = plotgroup.append('g').classed('shapelayer', true);
                 plotinfo.plot = plotgroup.append('svg').call(plotLayers);
+                fullLayout._shapeUpperLayer = plotgroup.append('g').classed('shapelayer', true);
+
                 plotinfo.overplot = plotgroup.append('g');
                 plotinfo.xlines = plotgroup.append('path');
                 plotinfo.ylines = plotgroup.append('path');

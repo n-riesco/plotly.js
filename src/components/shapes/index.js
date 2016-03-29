@@ -89,7 +89,8 @@ function linearToData(ax) { return ax.type === 'category' ? ax.l2c : ax.l2d; }
 
 shapes.drawAll = function(gd) {
     var fullLayout = gd._fullLayout;
-    fullLayout._shapelayer.selectAll('path').remove();
+    fullLayout._shapeLowerLayer.selectAll('path').remove();
+    fullLayout._shapeUpperLayer.selectAll('path').remove();
     for(var i = 0; i < fullLayout.shapes.length; i++) {
         shapes.draw(gd, i);
     }
@@ -151,14 +152,18 @@ shapes.draw = function(gd, index, opt, value) {
         }
     }
 
+    var shapelayer =
+        (layout.shapes[index] && layout.shapes[index].layer === 'above') ?
+        fullLayout._shapeUpperLayer :
+        fullLayout._shapeLowerLayer;
+
     if(!opt && value) {
         if(value==='remove') {
-            fullLayout._shapelayer.selectAll('[data-index="'+index+'"]')
-                .remove();
+            shapelayer.selectAll('[data-index="'+index+'"]').remove();
             fullLayout.shapes.splice(index,1);
             layout.shapes.splice(index,1);
             for(i=index; i<fullLayout.shapes.length; i++) {
-                fullLayout._shapelayer
+                shapelayer
                     .selectAll('[data-index="'+(i+1)+'"]')
                     .attr('data-index',String(i));
 
@@ -182,7 +187,7 @@ shapes.draw = function(gd, index, opt, value) {
             }
 
             for(i=fullLayout.shapes.length-1; i>index; i--) {
-                fullLayout._shapelayer
+                shapelayer
                     .selectAll('[data-index="'+(i-1)+'"]')
                     .attr('data-index',String(i));
                 shapes.draw(gd,i);
@@ -191,7 +196,7 @@ shapes.draw = function(gd, index, opt, value) {
     }
 
     // remove the existing shape if there is one
-    fullLayout._shapelayer.selectAll('[data-index="'+index+'"]').remove();
+    shapelayer.selectAll('[data-index="'+index+'"]').remove();
 
     // remember a few things about what was already there,
     var optionsIn = layout.shapes[index];
@@ -273,7 +278,7 @@ shapes.draw = function(gd, index, opt, value) {
 
     var lineColor = options.line.width ? options.line.color : 'rgba(0,0,0,0)';
 
-    var path = fullLayout._shapelayer.append('path')
+    var path = shapelayer.append('path')
         .attr(attrs)
         .style('opacity', options.opacity)
         .call(Plotly.Color.stroke, lineColor)
