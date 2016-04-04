@@ -171,7 +171,9 @@ function updateAllShapes(gd, opt, value) {
 }
 
 function deleteShape(gd, index) {
-    gd._fullLayout._shapelayer.selectAll('[data-index="' + index + '"]')
+    gd._fullLayout._paper
+        .selectAll('.shapelayer')
+        .selectAll('[data-index="' + index + '"]')
         .remove();
 
     gd._fullLayout.shapes.splice(index, 1);
@@ -181,7 +183,8 @@ function deleteShape(gd, index) {
     for(var i = index; i < gd._fullLayout.shapes.length; i++) {
         // redraw all shapes past the removed one,
         // so they bind to the right events
-        gd._fullLayout._shapelayer
+        gd._fullLayout._paper
+            .selectAll('.shapelayer')
             .selectAll('[data-index="' + (i+1) + '"]')
             .attr('data-index', String(i));
         shapes.draw(gd, i);
@@ -204,7 +207,8 @@ function insertShape(gd, index, newShape) {
     }
 
     for(var i = gd._fullLayout.shapes.length - 1; i > index; i--) {
-        gd._fullLayout._shapelayer
+        gd._fullLayout._paper
+            .selectAll('.shapelayer')
             .selectAll('[data-index="' + (i - 1) + '"]')
             .attr('data-index', String(i));
         shapes.draw(gd, i);
@@ -217,7 +221,9 @@ function updateShape(gd, index, opt, value) {
     var i;
 
     // remove the existing shape if there is one
-    gd._fullLayout._shapelayer.selectAll('[data-index="' + index + '"]')
+    gd._fullLayout._paper
+        .selectAll('.shapelayer')
+        .selectAll('[data-index="' + index + '"]')
         .remove();
 
     // remember a few things about what was already there,
@@ -291,26 +297,33 @@ function updateShape(gd, index, opt, value) {
     var options = handleShapeDefaults(optionsIn, gd._fullLayout);
     gd._fullLayout.shapes[index] = options;
 
-    var attrs = {
+    Object.keys(gd._fullLayout._plots || {}).forEach(function(subplot) {
+        var plotinfo = gd._fullLayout._plots[subplot];
+
+        var attrs = {
             'data-index': String(index),
             'fill-rule': 'evenodd',
-            d: shapePath(gd, options)
-        },
-        clipAxes = (options.xref + options.yref).replace(/paper/g, '');
+            d: shapePath(gd, subplot, options)
+        };
 
-    var lineColor = options.line.width ? options.line.color : 'rgba(0,0,0,0)';
+        var clipAxes = (options.xref + options.yref).replace(/paper/g, '');
 
-    var path = gd._fullLayout._shapelayer.append('path')
-        .attr(attrs)
-        .style('opacity', options.opacity)
-        .call(Plotly.Color.stroke, lineColor)
-        .call(Plotly.Color.fill, options.fillcolor)
-        .call(Plotly.Drawing.dashLine, options.line.dash, options.line.width);
+        var lineColor = options.line.width ? options.line.color : 'rgba(0,0,0,0)';
 
-    if(clipAxes) {
-        path.call(Plotly.Drawing.setClipUrl,
-            'clip' + gd._fullLayout._uid + clipAxes);
-    }
+        var path = plotinfo.plot.selectAll('.shapelayer')
+            .append('path')
+            .attr(attrs)
+            .style('opacity', options.opacity)
+            .call(Plotly.Color.stroke, lineColor)
+            .call(Plotly.Color.fill, options.fillcolor)
+            .call(Plotly.Drawing.dashLine,
+                options.line.dash, options.line.width);
+
+        if(clipAxes) {
+            path.call(Plotly.Drawing.setClipUrl,
+                'clip' + gd._fullLayout._uid + clipAxes);
+        }
+    });
 
     return;
 }
@@ -319,10 +332,14 @@ function decodeDate(convertToPx) {
     return function(v) { return convertToPx(v.replace('_', ' ')); };
 }
 
-function shapePath(gd, options) {
+function shapePath(gd, subplot, options) {
+    var plotinfo = gd._fullLayout._plots[subplot];
+
     var type = options.type,
         xa = Plotly.Axes.getFromId(gd, options.xref),
         ya = Plotly.Axes.getFromId(gd, options.yref),
+        xs = plotinfo.x(),
+        ys = plotinfo.y(),
         gs = gd._fullLayout._size,
         x2l,
         x2p,
@@ -331,18 +348,22 @@ function shapePath(gd, options) {
 
     if(xa) {
         x2l = dataToLinear(xa);
-        x2p = function(v) { return xa._offset + xa.l2p(x2l(v, true)); };
+        x2p = function(v) {
+            return -xs._offset + xa._offset + xa.l2p(x2l(v, true));
+        };
     }
     else {
-        x2p = function(v) { return gs.l + gs.w * v; };
+        x2p = function(v) { return -xs._offset + gs.l + gs.w * v; };
     }
 
     if(ya) {
         y2l = dataToLinear(ya);
-        y2p = function(v) { return ya._offset + ya.l2p(y2l(v, true)); };
+        y2p = function(v) {
+            return -ys._offset + ya._offset + ya.l2p(y2l(v, true));
+        };
     }
     else {
-        y2p = function(v) { return gs.t + gs.h * (1 - v); };
+        y2p = function(v) { return -ys._offset + gs.t + gs.h * (1 - v); };
     }
 
     if(type==='path') {

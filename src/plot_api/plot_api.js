@@ -2617,8 +2617,7 @@ function makePlotFramework(gd) {
 
     if(fullLayout._hasCartesian) makeCartesianPlotFramwork(gd, subplots);
 
-    // single shape and pie layers for the whole plot
-    fullLayout._shapelayer = fullLayout._paper.append('g').classed('shapelayer', true);
+    // single pie layer for the whole plot
     fullLayout._pielayer = fullLayout._paper.append('g').classed('pielayer', true);
 
     // fill in image server scrape-svg
@@ -2685,14 +2684,16 @@ function makeCartesianPlotFramwork(gd, subplots) {
     // 1. heatmaps, 2D histos and contour maps
     // 2. bars / 1D histos
     // 3. errorbars for bars and scatter
-    // 4. scatter
-    // 5. box plots
+    // 4. box plots
+    // 5. scatter
+    // 6. shapes
     function plotLayers(svg) {
         svg.append('g').classed('imagelayer', true);
         svg.append('g').classed('maplayer', true);
         svg.append('g').classed('barlayer', true);
         svg.append('g').classed('boxlayer', true);
         svg.append('g').classed('scatterlayer', true);
+        svg.append('g').classed('shapelayer', true);
     }
 
     // create all the layers in order, so we know they'll stay in order
