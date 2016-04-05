@@ -24,6 +24,10 @@ describe('Test shapes nodes', function() {
 
     afterEach(destroyGraphDiv);
 
+    function countSubplots() {
+        return d3.selectAll('.subplot').size();
+    }
+
     function countShapeLayers() {
         return d3.selectAll('.shapelayer').size();
     }
@@ -32,21 +36,30 @@ describe('Test shapes nodes', function() {
         return d3.selectAll('.shapelayer > path').size();
     }
 
-    it('has one *shapelayer* node', function() {
-        expect(countShapeLayers()).toEqual(1);
+    it('has as many *subplot* nodes as traces', function() {
+        expect(countSubplots()).toEqual(mock.data.length);
     });
 
-    it('has as many *path* nodes as there are shapes', function() {
-        expect(countPaths()).toEqual(mock.layout.shapes.length);
+    it('has as many *shapelayer* nodes as *subplot* nodes', function() {
+        expect(countShapeLayers()).toEqual(countSubplots());
+    });
+
+    it('has as many *path* nodes per subplot as there are shapes', function() {
+        expect(countPaths())
+            .toEqual(countSubplots() * mock.layout.shapes.length);
     });
 
     it('should be able to get relayout', function(done) {
-        expect(countShapeLayers()).toEqual(1);
-        expect(countPaths()).toEqual(mock.layout.shapes.length);
+        expect(countSubplots()).toEqual(mock.data.length);
+        expect(countShapeLayers()).toEqual(countSubplots());
+        expect(countPaths())
+            .toEqual(countSubplots() * mock.layout.shapes.length);
 
         Plotly.relayout(gd, {height: 200, width: 400}).then(function() {
-            expect(countShapeLayers()).toEqual(1);
-            expect(countPaths()).toEqual(mock.layout.shapes.length);
+            expect(countSubplots()).toEqual(mock.data.length);
+            expect(countShapeLayers()).toEqual(countSubplots());
+            expect(countPaths())
+                .toEqual(countSubplots() * mock.layout.shapes.length);
             done();
         });
     });

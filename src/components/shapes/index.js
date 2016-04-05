@@ -17,12 +17,20 @@ var shapes = module.exports = {};
 shapes.layoutAttributes = require('./attributes');
 
 shapes.supplyLayoutDefaults = function(layoutIn, layoutOut) {
-    var containerIn = layoutIn.shapes || [],
-        containerOut = layoutOut.shapes = [];
+    var mockGd = {
+        _fullLayout: layoutOut
+    };
 
-    for(var i = 0; i < containerIn.length; i++) {
-        containerOut.push(handleShapeDefaults(containerIn[i] || {}, layoutOut));
-    }
+    forEachSubplot(mockGd, function(plotinfo) {
+        var containerIn = layoutIn.shapes || [],
+            containerOut = plotinfo.shapes = [];
+
+        for(var i = 0; i < containerIn.length; i++) {
+            containerOut.push(
+                handleShapeDefaults(containerIn[i] || {}, layoutOut)
+            );
+        }
+    });
 };
 
 function handleShapeDefaults(shapeIn, fullLayout) {
@@ -87,9 +95,17 @@ function dataToLinear(ax) { return ax.type === 'category' ? ax.c2l : ax.d2l; }
 
 function linearToData(ax) { return ax.type === 'category' ? ax.l2c : ax.l2d; }
 
+function getShapeCount(gd) { return (gd.layout.shapes || []).length; }
+
+function forEachSubplot(gd, fn) {
+    Object.keys(gd._fullLayout._plots || {}).forEach(function(subplot) {
+        var plotinfo = gd._fullLayout._plots[subplot];
+        fn(plotinfo);
+    });
+}
+
 shapes.drawAll = function(gd) {
-    var fullLayout = gd._fullLayout;
-    for(var i = 0; i < fullLayout.shapes.length; i++) {
+    for(var i = 0, n = getShapeCount(gd); i < n; i++) {
         shapes.draw(gd, i);
     }
     // may need to resurrect this if we put text (LaTeX) in shapes
@@ -97,8 +113,8 @@ shapes.drawAll = function(gd) {
 };
 
 shapes.add = function(gd) {
-    var nextShape = gd._fullLayout.shapes.length;
-    Plotly.relayout(gd, 'shapes['+nextShape+']', 'add');
+    var nextShape = getShapeCount(gd);
+    Plotly.relayout(gd, 'shapes[' + nextShape + ']', 'add');
 };
 
 // -----------------------------------------------------
@@ -130,8 +146,11 @@ shapes.draw = function(gd, index, opt, value) {
         }
         else {
             // add a new empty annotation
-            index = gd._fullLayout.shapes.length;
-            gd._fullLayout.shapes.push({});
+            index = getShapeCount(gd);
+
+            forEachSubplot(gd, function(plotinfo) {
+                plotinfo.shapes.push({});
+            });
         }
     }
 
@@ -158,30 +177,37 @@ function replaceAllShapes(gd, newShapes) {
 
 function deleteAllShapes(gd) {
     delete gd.layout.shapes;
-    gd._fullLayout.shapes = [];
+    forEachSubplot(gd, function(plotinfo) {
+        plotinfo.shapes = [];
+    });
     shapes.drawAll(gd);
     return;
 }
 
 function updateAllShapes(gd, opt, value) {
-    for(var i = 0; i < gd._fullLayout.shapes.length; i++) {
+    for(var i = 0, n = getShapeCount(gd); i < n; i++) {
         shapes.draw(gd, i, opt, value);
     }
     return;
 }
 
 function deleteShape(gd, index) {
-    gd._fullLayout._shapelayer.selectAll('[data-index="' + index + '"]')
+    gd._fullLayout._paper
+        .selectAll('.shapelayer')
+        .selectAll('[data-index="' + index + '"]')
         .remove();
 
-    gd._fullLayout.shapes.splice(index, 1);
+    forEachSubplot(gd, function(plotinfo) {
+        plotinfo.shapes.splice(index, 1);
+    });
 
     gd.layout.shapes.splice(index, 1);
 
-    for(var i = index; i < gd._fullLayout.shapes.length; i++) {
+    for(var i = index, n = getShapeCount(gd); i < n; i++) {
         // redraw all shapes past the removed one,
         // so they bind to the right events
-        gd._fullLayout._shapelayer
+        gd._fullLayout._paper
+            .selectAll('.shapelayer')
             .selectAll('[data-index="' + (i+1) + '"]')
             .attr('data-index', String(i));
         shapes.draw(gd, i);
@@ -191,7 +217,9 @@ function deleteShape(gd, index) {
 }
 
 function insertShape(gd, index, newShape) {
-    gd._fullLayout.shapes.splice(index, 0, {});
+    forEachSubplot(gd, function(plotinfo) {
+        plotinfo.shapes.splice(index, 0, {});
+    });
 
     var rule = Plotly.Lib.isPlainObject(newShape) ?
         Plotly.Lib.extendFlat({}, newShape) :
@@ -203,8 +231,9 @@ function insertShape(gd, index, newShape) {
         gd.layout.shapes = [rule];
     }
 
-    for(var i = gd._fullLayout.shapes.length - 1; i > index; i--) {
-        gd._fullLayout._shapelayer
+    for(var i = getShapeCount(gd) - 1; i > index; i--) {
+        gd._fullLayout._paper
+            .selectAll('.shapelayer')
             .selectAll('[data-index="' + (i - 1) + '"]')
             .attr('data-index', String(i));
         shapes.draw(gd, i);
@@ -217,7 +246,9 @@ function updateShape(gd, index, opt, value) {
     var i;
 
     // remove the existing shape if there is one
-    gd._fullLayout._shapelayer.selectAll('[data-index="' + index + '"]')
+    gd._fullLayout._paper
+        .selectAll('.shapelayer')
+        .selectAll('[data-index="' + index + '"]')
         .remove();
 
     // remember a few things about what was already there,
@@ -288,29 +319,35 @@ function updateShape(gd, index, opt, value) {
         optionsIn[posAttr] = position;
     }
 
-    var options = handleShapeDefaults(optionsIn, gd._fullLayout);
-    gd._fullLayout.shapes[index] = options;
+    forEachSubplot(gd, function(plotinfo) {
+        var options = handleShapeDefaults(optionsIn, gd._fullLayout);
+        plotinfo.shapes[index] = options;
 
-    var attrs = {
+        var attrs = {
             'data-index': String(index),
             'fill-rule': 'evenodd',
             d: shapePath(gd, options)
-        },
-        clipAxes = (options.xref + options.yref).replace(/paper/g, '');
+        };
 
-    var lineColor = options.line.width ? options.line.color : 'rgba(0,0,0,0)';
+        var clipAxes = (options.xref + options.yref).replace(/paper/g, '');
 
-    var path = gd._fullLayout._shapelayer.append('path')
-        .attr(attrs)
-        .style('opacity', options.opacity)
-        .call(Plotly.Color.stroke, lineColor)
-        .call(Plotly.Color.fill, options.fillcolor)
-        .call(Plotly.Drawing.dashLine, options.line.dash, options.line.width);
+        var lineColor = options.line.width ?
+            options.line.color :
+            'rgba(0,0,0,0)';
 
-    if(clipAxes) {
-        path.call(Plotly.Drawing.setClipUrl,
-            'clip' + gd._fullLayout._uid + clipAxes);
-    }
+        var path = plotinfo.shapelayer.append('path')
+            .attr(attrs)
+            .style('opacity', options.opacity)
+            .call(Plotly.Color.stroke, lineColor)
+            .call(Plotly.Color.fill, options.fillcolor)
+            .call(Plotly.Drawing.dashLine,
+                    options.line.dash, options.line.width);
+
+        if(clipAxes) {
+            path.call(Plotly.Drawing.setClipUrl,
+                'clip' + gd._fullLayout._uid + clipAxes);
+        }
+    });
 
     return;
 }
@@ -446,15 +483,21 @@ shapes.convertPath = function(pathIn, x2p, y2p) {
 };
 
 shapes.calcAutorange = function(gd) {
-    var fullLayout = gd._fullLayout,
-        shapeList = fullLayout.shapes,
-        i,
+    if(!gd._fullData.length) return;
+
+    forEachSubplot(gd, function(plotinfo) {
+        calcAutorange(gd, plotinfo.shapes);
+    });
+};
+
+function calcAutorange(gd, shapeList) {
+    var i,
         shape,
         ppad,
         ax,
         bounds;
 
-    if(!shapeList.length || !gd._fullData.length) return;
+    if(!shapeList) return;
 
     for(i = 0; i < shapeList.length; i++) {
         shape = shapeList[i];
@@ -470,7 +513,7 @@ shapes.calcAutorange = function(gd) {
             if(bounds) Plotly.Axes.expand(ax, bounds, {ppad: ppad});
         }
     }
-};
+}
 
 function shapeBounds(ax, v0, v1, path, paramsToUse) {
     var convertVal = (ax.type==='category') ? Number : ax.d2c;

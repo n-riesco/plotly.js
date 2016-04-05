@@ -1806,7 +1806,7 @@ function dragBox(gd, plotinfo, x, y, w, h, ns, ew) {
         }
 
         redrawObjs(fullLayout.annotations || [], Plotly.Annotations);
-        redrawObjs(fullLayout.shapes || [], Plotly.Shapes);
+        redrawObjs(plotinfo.shapes || [], Plotly.Shapes);
     }
 
     function doubleClick() {
