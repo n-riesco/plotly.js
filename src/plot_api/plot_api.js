@@ -2754,6 +2754,7 @@ function makeCartesianPlotFramwork(gd, subplots) {
                 plotinfo.zerolinelayer = plotgroup.append('g');
                 plotinfo.overzero = plotgroup.append('g');
                 plotinfo.plot = plotgroup.append('svg').call(plotLayers);
+                plotinfo.zoomlayer = plotgroup.append('g');
                 plotinfo.overplot = plotgroup.append('g');
                 plotinfo.xlines = plotgroup.append('path');
                 plotinfo.ylines = plotgroup.append('path');
@@ -2780,6 +2781,7 @@ function makeCartesianPlotFramwork(gd, subplots) {
         plotinfo.gridlayer = mainplot.overgrid.append('g');
         plotinfo.zerolinelayer = mainplot.overzero.append('g');
         plotinfo.plot = mainplot.overplot.append('svg').call(plotLayers);
+        plotinfo.zoomlayer = mainplot.overplot.append('g');
         plotinfo.xlines = mainplot.overlines.append('path');
         plotinfo.ylines = mainplot.overlines.append('path');
         plotinfo.xaxislayer = mainplot.overaxes.append('g');

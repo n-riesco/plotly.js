@@ -23,7 +23,10 @@ function getAxId(ax) { return ax._id; }
 
 module.exports = function prepSelect(e, startX, startY, dragOptions, mode) {
     var plot = dragOptions.plotinfo.plot,
+        zoomlayer = dragOptions.plotinfo.zoomlayer,
         dragBBox = dragOptions.element.getBoundingClientRect(),
+        xs = dragOptions.plotinfo.x()._offset,
+        ys = dragOptions.plotinfo.y()._offset,
         x0 = startX - dragBBox.left,
         y0 = startY - dragBBox.top,
         x1 = x0,
@@ -47,13 +50,14 @@ module.exports = function prepSelect(e, startX, startY, dragOptions, mode) {
         .attr('class', function(d) { return 'select-outline select-outline-' + d; })
         .attr('d', path0 + 'Z');
 
-    var corners = plot.append('path')
+    var corners = zoomlayer.append('path')
         .attr('class', 'zoombox-corners')
         .style({
             fill: color.background,
             stroke: color.defaultLine,
             'stroke-width': 1
         })
+        .attr('transform','translate(' + xs + ' ' + ys + ')')
         .attr('d','M0,0Z');
 
 

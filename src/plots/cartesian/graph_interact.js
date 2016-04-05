@@ -1433,6 +1433,8 @@ function dragBox(gd, plotinfo, x, y, w, h, ns, ew) {
 
     var x0,
         y0,
+        xs = plotinfo.x()._offset,
+        ys = plotinfo.y()._offset,
         box,
         lum,
         path0,
@@ -1453,15 +1455,16 @@ function dragBox(gd, plotinfo, x, y, w, h, ns, ew) {
         dimmed = false;
         zoomMode = 'xy';
 
-        zb = plotinfo.plot.append('path')
+        zb = plotinfo.zoomlayer.append('path')
             .attr('class', 'zoombox')
             .style({
                 'fill': lum>0.2 ? 'rgba(0,0,0,0)' : 'rgba(255,255,255,0)',
                 'stroke-width': 0
             })
+            .attr('transform','translate(' + xs + ' ' + ys + ')')
             .attr('d', path0 + 'Z');
 
-        corners = plotinfo.plot.append('path')
+        corners = plotinfo.zoomlayer.append('path')
             .attr('class', 'zoombox-corners')
             .style({
                 fill: Plotly.Color.background,
@@ -1469,6 +1472,7 @@ function dragBox(gd, plotinfo, x, y, w, h, ns, ew) {
                 'stroke-width': 1,
                 opacity: 0
             })
+            .attr('transform','translate(' + xs + ' ' + ys + ')')
             .attr('d','M0,0Z');
 
         clearSelect();
