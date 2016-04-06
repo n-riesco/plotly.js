@@ -16,17 +16,21 @@ var PORT = '8080';
 
 var testFile;
 switch(process.argv[2]) {
+    case undefined:
+    case 'gl2d':
+        testFile = path.join(__dirname, 'test_gl2d');
+        break;
     case 'cartesian':
-        testFile = 'test_cartesian';
+        testFile = path.join(__dirname, 'test_cartesian');
         break;
     case 'geo':
-        testFile = 'test_geo';
+        testFile = path.join(__dirname, 'test_geo');
         break;
     case 'gl3d':
-        testFile = 'test_gl3d';
+        testFile = path.join(__dirname, 'test_gl3d');
         break;
     default:
-        testFile = 'test_gl2d';
+        testFile = process.argv[2];
 }
 
 console.log('Using ' + testFile);
@@ -40,7 +44,7 @@ watchifiedBundle();
 
 // build the test examples
 fs.unlink(constants.pathToTestDashboardBundle, function() {
-    browserify(path.join(__dirname, testFile), {
+    browserify(testFile, {
         debug: true,
         transform: [shortcutPaths]
     })
