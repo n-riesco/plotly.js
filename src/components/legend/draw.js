@@ -276,8 +276,7 @@ module.exports = function draw(gd) {
         computeLegendPosition();  // updates lx, ly and legendHeight
 
         // Position all the elements that make up a legend
-        var dataScroll = scrollBox.attr('data-scroll') || 0;
-        scrollBox.attr('transform', 'translate(0, ' + dataScroll + ')');
+        legend.attr('transform', 'translate(' + lx + ',' + ly + ')');
 
         bg.attr({
             width: opts.width - 2 * opts.borderwidth,
@@ -286,16 +285,16 @@ module.exports = function draw(gd) {
             y: opts.borderwidth
         });
 
-        legend.attr('transform', 'translate(' + lx + ',' + ly + ')');
-
         clipPath.select('rect').attr({
-            width: opts.width,
-            height: legendHeight,
-            x: 0,
-            y: 0
+            width: opts.width - 2 * opts.borderwidth,
+            height: legendHeight - 2 * opts.borderwidth,
+            x: opts.borderwidth,
+            y: opts.borderwidth
         });
 
-        legend.call(Drawing.setClipUrl, clipId);
+        scrollBox.call(Drawing.setClipUrl, clipId);
+        var dataScroll = scrollBox.attr('data-scroll') || 0;
+        groups.attr('transform', 'translate(0, ' + dataScroll + ')');
 
         if(opts.height - legendHeight > 0 && !gd._context.staticPlot) {
             // Show the scrollbar only if needed and requested
@@ -317,21 +316,15 @@ module.exports = function draw(gd) {
             });
 
             clipPath.select('rect').attr({
-                width: opts.width +
+                width: opts.width -
+                    2 * opts.borderwidth +
                     constants.scrollBarWidth +
                     constants.scrollBarMargin
             });
 
             if(gd.firstRender) {
                 // Move scrollbar to starting position
-                scrollBar.call(
-                    Drawing.setRect,
-                    opts.width,
-                    constants.scrollBarMargin,
-                    constants.scrollBarWidth,
-                    constants.scrollBarHeight
-                );
-                scrollBox.attr('data-scroll', 0);
+                scrollHandler(constants.scrollBarMargin, 0);
             }
 
             // Handle wheel and drag events
@@ -375,7 +368,7 @@ module.exports = function draw(gd) {
 
             function scrollHandler(scrollBarY, scrollBoxY) {
                 scrollBox.attr('data-scroll', scrollBoxY);
-                scrollBox.attr('transform', 'translate(0, ' + scrollBoxY + ')');
+                groups.attr('transform', 'translate(0, ' + scrollBoxY + ')');
                 scrollBar.call(
                     Drawing.setRect,
                     opts.width,
