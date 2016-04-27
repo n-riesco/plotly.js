@@ -106,6 +106,7 @@ module.exports = function dragBox(gd, plotinfo, x, y, w, h, ns, ew) {
         yaxes: ya,
         doubleclick: doubleClick,
         prepFn: function(e, startX, startY) {
+            console.log('@@@prepFn', e, startX, startY);
             var dragModeNow = gd._fullLayout.dragmode;
             if(ns + ew === 'nsew') {
                 // main dragger handles all drag modes, and changes
@@ -117,6 +118,7 @@ module.exports = function dragBox(gd, plotinfo, x, y, w, h, ns, ew) {
             }
             // all other draggers just pan
             else dragModeNow = 'pan';
+            console.log('@@@dragModeNow', dragModeNow);
 
             if(dragModeNow === 'lasso') dragOptions.minDrag = 1;
             else dragOptions.minDrag = undefined;
@@ -306,6 +308,7 @@ module.exports = function dragBox(gd, plotinfo, x, y, w, h, ns, ew) {
     }
 
     function dragDone(dragged, numClicks) {
+        console.log('@@@dragDone', dragged, numClicks);
         var singleEnd = (ns + ew).length === 1;
         if(dragged) dragTail();
         else if(numClicks === 2 && !singleEnd) doubleClick();
@@ -427,6 +430,7 @@ module.exports = function dragBox(gd, plotinfo, x, y, w, h, ns, ew) {
 
     // plotDrag: move the plot in response to a drag
     function plotDrag(dx,dy) {
+        console.log('@@@plotDrag', dx, dy);
         function dragAxList(axList, pix) {
             for(var i = 0; i < axList.length; i++) {
                 var axi = axList[i];
@@ -574,6 +578,7 @@ module.exports = function dragBox(gd, plotinfo, x, y, w, h, ns, ew) {
 
     // dragTail - finish a drag event with a redraw
     function dragTail(zoommode) {
+        console.log('@@@dragTail', zoommode);
         var attrs = {};
         // revert to the previous axis settings, then apply the new ones
         // through relayout - this lets relayout manage undo/redo
@@ -589,6 +594,7 @@ module.exports = function dragBox(gd, plotinfo, x, y, w, h, ns, ew) {
         }
 
         updateSubplots([0,0,pw,ph]);
+        console.log('@@@relayout', attrs);
         Plotly.relayout(gd,attrs);
     }
 

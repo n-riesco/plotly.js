@@ -52,6 +52,7 @@ describe('Test click interactions:', function() {
     }
 
     function drag(fromX, fromY, toX, toY, delay) {
+        console.log('@@@drag before event:', fromX, fromY, toX, toY, delay);
         return new Promise(function(resolve) {
             mouseEvent('mousemove', fromX, fromY);
             mouseEvent('mousedown', fromX, fromY);
@@ -59,6 +60,8 @@ describe('Test click interactions:', function() {
 
             setTimeout(function() {
                 mouseEvent('mouseup', toX, toY);
+                console.log('@@@drag after event:', gd._fullLayout.xaxis.range,
+                        gd._fullLayout.yaxis.range);
                 resolve();
             }, delay || DBLCLICKDELAY / 4);
         });
@@ -180,12 +183,53 @@ describe('Test click interactions:', function() {
 
     describe('drag interactions', function() {
         beforeEach(function(done) {
-            Plotly.plot(gd, mockCopy.data, mockCopy.layout).then(done);
+            Plotly.plot(gd, mockCopy.data, mockCopy.layout).then(function() {
+                var tip = document.querySelector('.notifier-note');
+                var pos;
+                try {
+                    pos = getRectCenter(tip);
+                } catch(e) {
+                    pos = e;
+                }
+                var err;
+                try {
+                    tip.style.display = 'none';
+                } catch(e) {
+                    err = e;
+                }
+                console.log('@@ Before test', tip, pos, err);
+                done();
+            });
         });
 
-        it('on nw dragbox should update the axis ranges', function(done) {
+        afterEach(function() {
+            console.log('@@ After test');
+        });
+
+        function $it(title, fn) {
+            var f;
+            if(fn.length===0) {
+                f = function() {
+                    console.log('@@@', title);
+                    fn();
+                };
+            } else {
+                f = function(done) {
+                    console.log('@@@', title);
+                    fn(done);
+                };
+            }
+            it(title,f);
+        }
+
+        $it('on nw dragbox should update the axis ranges', function(done) {
             var node = document.querySelector('rect.nwdrag');
             var pos = getRectCenter(node);
+            var el = document.elementFromPoint(pos[0], pos[1]);
+            console.log('@@@el', el, el === node);
+            node.addEventListener('mousemove', function(e) {
+                console.log('@@@mousemove', e);
+            });
 
             expect(node.classList[0]).toBe('drag');
             expect(node.classList[1]).toBe('nwdrag');
@@ -207,9 +251,14 @@ describe('Test click interactions:', function() {
             });
         });
 
-        it('on ne dragbox should update the axis ranges', function(done) {
+        $it('on ne dragbox should update the axis ranges', function(done) {
             var node = document.querySelector('rect.nedrag');
             var pos = getRectCenter(node);
+            var el = document.elementFromPoint(pos[0], pos[1]);
+            console.log('@@@el', el, el === node);
+            node.addEventListener('mousemove', function(e) {
+                console.log('@@@mousemove', e);
+            });
 
             expect(node.classList[0]).toBe('drag');
             expect(node.classList[1]).toBe('nedrag');
@@ -231,7 +280,7 @@ describe('Test click interactions:', function() {
             });
         });
 
-        it('on sw dragbox should update the axis ranges', function(done) {
+        $it('on sw dragbox should update the axis ranges', function(done) {
             var node = document.querySelector('rect.swdrag');
             var pos = getRectCenter(node);
 
@@ -255,7 +304,7 @@ describe('Test click interactions:', function() {
             });
         });
 
-        it('on se dragbox should update the axis ranges', function(done) {
+        $it('on se dragbox should update the axis ranges', function(done) {
             var node = document.querySelector('rect.sedrag');
             var pos = getRectCenter(node);
 
@@ -279,7 +328,7 @@ describe('Test click interactions:', function() {
             });
         });
 
-        it('on ew dragbox should update the xaxis range', function(done) {
+        $it('on ew dragbox should update the xaxis range', function(done) {
             var node = document.querySelector('rect.ewdrag');
             var pos = getRectCenter(node);
 
@@ -303,7 +352,7 @@ describe('Test click interactions:', function() {
             });
         });
 
-        it('on w dragbox should update the xaxis range', function(done) {
+        $it('on w dragbox should update the xaxis range', function(done) {
             var node = document.querySelector('rect.wdrag');
             var pos = getRectCenter(node);
 
@@ -327,7 +376,7 @@ describe('Test click interactions:', function() {
             });
         });
 
-        it('on e dragbox should update the xaxis range', function(done) {
+        $it('on e dragbox should update the xaxis range', function(done) {
             var node = document.querySelector('rect.edrag');
             var pos = getRectCenter(node);
 
@@ -351,7 +400,7 @@ describe('Test click interactions:', function() {
             });
         });
 
-        it('on ns dragbox should update the yaxis range', function(done) {
+        $it('on ns dragbox should update the yaxis range', function(done) {
             var node = document.querySelector('rect.nsdrag');
             var pos = getRectCenter(node);
 
@@ -375,7 +424,7 @@ describe('Test click interactions:', function() {
             });
         });
 
-        it('on s dragbox should update the yaxis range', function(done) {
+        $it('on s dragbox should update the yaxis range', function(done) {
             var node = document.querySelector('rect.sdrag');
             var pos = getRectCenter(node);
 
@@ -399,7 +448,7 @@ describe('Test click interactions:', function() {
             });
         });
 
-        it('on n dragbox should update the yaxis range', function(done) {
+        $it('on n dragbox should update the yaxis range', function(done) {
             var node = document.querySelector('rect.ndrag');
             var pos = getRectCenter(node);
 
