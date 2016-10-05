@@ -15,6 +15,8 @@ var Registry = require('../../registry');
 var Axes = require('../../plots/cartesian/axes');
 var Lib = require('../../lib');
 
+var Sieve = require('./sieve.js');
+
 /*
  * Bar chart stacking/grouping positioning and autoscaling calculations
  * for each direction separately calculate the ranges and positions
@@ -128,39 +130,35 @@ module.exports = function setPositions(gd, plotinfo) {
             // so we don't have to redo this later
             var sMax = sa.l2c(sa.c2l(0)),
                 sMin = sMax,
-                sums = {},
 
-                // make sure if p is different only by rounding,
-                // we still stack
-                sumround = gd.calcdata[bl[0]][0].t.barwidth / 100,
-                sv = 0,
+                // Trace data is sieved into bins of width binWidth.
+                // If barmode is 'relative', negative and positive values are
+                // sieved into different bins.
+                binWidth = gd.calcdata[bl[0]][0].t.barwidth / 100,
+                binBase = (relative) ? 0 : null,
+                sieve = new Sieve(binWidth, binBase),
+
                 padded = true,
                 barEnd,
-                ti,
-                scale;
+                ti,     // trace i
+                pij;    // point j in trace i
 
-            for(i = 0; i < bl.length; i++) { // trace index
+            // Sieve data and update bar positions
+            for(i = 0; i < bl.length; i++) {
                 ti = gd.calcdata[bl[i]];
+
                 for(j = 0; j < ti.length; j++) {
+                    pij = ti[j];
 
-                    // skip over bars with no size,
-                    // so that we don't try to stack them
-                    if(!isNumeric(ti[j].s)) continue;
+                    if(!isNumeric(pij.s)) continue;
 
-                    sv = Math.round(ti[j].p / sumround);
+                    var previousSum = sieve.put(pij.p, pij.s);
 
-                    // store the negative sum value for p at the same key,
-                    // with sign flipped using string to ensure -0 !== 0.
-                    if(relative && ti[j].s < 0) sv = '-' + sv;
-
-                    var previousSum = sums[sv] || 0;
-                    if(stack || relative) ti[j].b = previousSum;
-                    barEnd = ti[j].b + ti[j].s;
-                    sums[sv] = previousSum + ti[j].s;
-
-                    // store the bar top in each calcdata item
                     if(stack || relative) {
-                        ti[j][sLetter] = barEnd;
+                        pij.b = previousSum;
+                        barEnd = pij.b + pij.s;
+                        pij[sLetter] = barEnd;
+
                         if(!norm && isNumeric(sa.c2l(barEnd))) {
                             sMax = Math.max(sMax, barEnd);
                             sMin = Math.min(sMin, barEnd);
@@ -170,40 +168,32 @@ module.exports = function setPositions(gd, plotinfo) {
             }
 
             if(norm) {
-                var top = norm === 'fraction' ? 1 : 100,
-                    relAndNegative = false,
-                    tiny = top / 1e9; // in case of rounding error in sum
+                var sTop = (norm === 'fraction') ? 1 : 100,
+                    sTiny = sTop / 1e9; // in case of rounding error in sum
 
                 padded = false;
                 sMin = 0;
-                sMax = stack ? top : 0;
+                sMax = stack ? sTop : 0;
 
-                for(i = 0; i < bl.length; i++) { // trace index
+                for(i = 0; i < bl.length; i++) {
                     ti = gd.calcdata[bl[i]];
 
                     for(j = 0; j < ti.length; j++) {
-                        relAndNegative = (relative && ti[j].s < 0);
+                        pij = ti[j];
 
-                        sv = Math.round(ti[j].p / sumround);
+                        var scale = Math.abs(sTop / sieve.get(pij.p, pij.s));
+                        pij.b *= scale;
+                        pij.s *= scale;
 
-                        // locate negative sum amount for this p val
-                        if(relAndNegative) sv = '-' + sv;
-
-                        scale = top / sums[sv];
-
-                        // preserve sign if negative
-                        if(relAndNegative) scale *= -1;
-                        ti[j].b *= scale;
-                        ti[j].s *= scale;
-                        barEnd = ti[j].b + ti[j].s;
-                        ti[j][sLetter] = barEnd;
+                        barEnd = pij.b + pij.s;
+                        pij[sLetter] = barEnd;
 
                         if(isNumeric(sa.c2l(barEnd))) {
-                            if(barEnd < sMin - tiny) {
+                            if(barEnd < sMin - sTiny) {
                                 padded = true;
                                 sMin = barEnd;
                             }
-                            if(barEnd > sMax + tiny) {
+                            if(barEnd > sMax + sTiny) {
                                 padded = true;
                                 sMax = barEnd;
                             }
