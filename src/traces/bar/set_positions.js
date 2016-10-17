@@ -76,17 +76,11 @@ function setGroupPositionsInOverlayMode(gd, pa, sa, traces) {
     // update position axis and set bar offsets and widths
     traces.forEach(function(trace) {
         var sieve = new Sieve(
-                    [trace], separateNegativeValues, dontMergeOverlappingData
-                ),
-            minDiff = sieve.minDiff,
-            distinctPositions = sieve.distinctPositions;
+            [trace], separateNegativeValues, dontMergeOverlappingData
+        );
 
-        // set bar offsets and widths
+        // set bar offsets and widths and update position axis
         setOffsetAndWidth(gd, pa, sieve);
-
-        // update position axis
-        Axes.minDtick(pa, minDiff, distinctPositions[0]);
-        Axes.expand(pa, distinctPositions, {vpad: minDiff / 2});
 
         // update size axis and set bar bases and sizes
         if(barnorm) {
@@ -102,6 +96,8 @@ function setGroupPositionsInOverlayMode(gd, pa, sa, traces) {
             Axes.expand(sa, trace.map(fs), {tozero: true, padded: true});
         }
     });
+
+    applyBarbase(gd, sa, traces);
 }
 
 
@@ -112,16 +108,10 @@ function setGroupPositionsInGroupMode(gd, pa, sa, traces) {
         dontMergeOverlappingData = !barnorm,
         sieve = new Sieve(
                 traces, separateNegativeValues, dontMergeOverlappingData
-            ),
-        minDiff = sieve.minDiff,
-        distinctPositions = sieve.distinctPositions;
+            );
 
-    // set bar offsets and widths
+    // set bar offsets and widths and update position axis
     setOffsetAndWidthInGroupMode(gd, pa, sieve);
-
-    // update position axis
-    Axes.minDtick(pa, minDiff, distinctPositions[0]);
-    Axes.expand(pa, distinctPositions, {vpad: minDiff / 2});
 
     // update size axis and set bar bases and sizes
     if(barnorm) {
@@ -138,6 +128,8 @@ function setGroupPositionsInGroupMode(gd, pa, sa, traces) {
             Axes.expand(sa, traces[i].map(fs), {tozero: true, padded: true});
         }
     }
+
+    applyBarbase(gd, sa, traces);
 }
 
 
@@ -151,18 +143,12 @@ function setGroupPositionsInStackOrRelativeMode(gd, pa, sa, traces) {
         dontMergeOverlappingData = !(barnorm || stack || relative),
         sieve = new Sieve(
                 traces, separateNegativeValues, dontMergeOverlappingData
-            ),
-        minDiff = sieve.minDiff,
-        distinctPositions = sieve.distinctPositions;
+            );
 
-    // set bar offsets and widths
+    // set bar offsets and widths and update position axis
     setOffsetAndWidth(gd, pa, sieve);
 
-    // update position axis
-    Axes.minDtick(pa, minDiff, distinctPositions[0]);
-    Axes.expand(pa, distinctPositions, {vpad: minDiff / 2});
-
-    // set bar bases and sizes
+    // set bar bases and sizes and update size axis
     stackBars(gd, sa, sieve);
 }
 
@@ -199,6 +185,11 @@ function setOffsetAndWidth(gd, pa, sieve) {
             bar[pLetter] = bar.p + barCenter;
         }
     }
+
+    // update position axis
+    var distinctPositions = sieve.distinctPositions;
+    Axes.minDtick(pa, minDiff, distinctPositions[0]);
+    Axes.expand(pa, distinctPositions, {vpad: minDiff / 2});
 }
 
 
@@ -243,6 +234,10 @@ function setOffsetAndWidthInGroupMode(gd, pa, sieve) {
             bar[pLetter] = bar.p + barCenter;
         }
     }
+
+    // update position axis
+    Axes.minDtick(pa, minDiff, distinctPositions[0], overlap);
+    Axes.expand(pa, distinctPositions, {vpad: minDiff / 2});
 }
 
 
@@ -318,9 +313,11 @@ function normalizeBars(gd, sa, sieve) {
         var trace = traces[i];
 
         for(var j = 0; j < trace.length; j++) {
-            var bar = trace[j],
-                scale = Math.abs(sTop / sieve.get(bar.p, bar.s));
+            var bar = trace[j];
 
+            if(!isNumeric(bar.s)) continue;
+
+            var scale = Math.abs(sTop / sieve.get(bar.p, bar.s));
             bar.b *= scale;
             bar.s *= scale;
             var barEnd = bar.b + bar.s;
@@ -340,6 +337,27 @@ function normalizeBars(gd, sa, sieve) {
     }
 
     Axes.expand(sa, [sMin, sMax], {tozero: true, padded: padded});
+}
+
+
+function applyBarbase(gd, sa, traces) {
+    var barbase = gd._fullLayout.barbase;
+    if(!barbase || !isNumeric(sa.c2l(barbase))) return;
+
+    for(var i = 0; i < traces.length; i++) {
+        var trace = traces[i];
+
+        for(var j = 0; j < trace.length; j++) {
+            var bar = trace[j],
+                bartop = bar.b + bar.s;
+            if(isNumeric(sa.c2l(bartop))) {
+                bar.b = barbase;
+                bar.s = bartop - barbase;
+            }
+        }
+    }
+
+    Axes.expand(sa, [barbase], {tozero: true, padded: true});
 }
 
 
