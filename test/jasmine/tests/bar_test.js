@@ -349,9 +349,9 @@ describe('Bar.setPositions', function() {
 
         var cd = gd.calcdata;
         assertPointField(cd, 'b', [[0, 0, 0], [1, 2, 3], [-1, -1, -1]]);
-        assertPointField(cd, 's', [[1, 2, 3], [10, 20, 30], [0, -1, -2]]);
+        assertPointField(cd, 's', [[1, 2, 3], [10, 20, 30], [-1, -2, -3]]);
         assertPointField(cd, 'x', [[0, 1, 2], [0, 1, 2], [0, 1, 2]]);
-        assertPointField(cd, 'y', [[1, 2, 3], [11, 22, 33], [-1, -2, -3]]);
+        assertPointField(cd, 'y', [[1, 2, 3], [11, 22, 33], [-2, -3, -4]]);
     });
 
     it('should draw traces separately in overlay mode', function() {
@@ -528,16 +528,16 @@ describe('Bar.setPositions', function() {
 
     it('should expand size axis (overlay case)', function() {
         var gd = mockBarPlot([{
-            base: 10,
+            base: 7,
             y: [3, 2, 1]
         }, {
-            base: 5,
+            base: 2,
             y: [1, 2, 3]
         }, {
-            base: -5,
+            base: -2,
             y: [-3, -2, -1]
         }, {
-            base: -10,
+            base: -7,
             y: [-1, -2, -3]
         }], {
             bargap: 0,
