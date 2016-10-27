@@ -48,6 +48,8 @@ module.exports = function(layoutIn, layoutOut, fullData) {
 
     if(!hasBars) return;
 
+    coerce('barbase');
+
     var mode = coerce('barmode');
     if(mode !== 'overlay') coerce('barnorm');
 

@@ -10,6 +10,12 @@
 
 
 module.exports = {
+    barbase: {
+        valType: 'number',
+        dflt: 0,
+        role: 'style',
+        description: 'Sets where the bar base is drawn (in axis units).'
+    },
     barmode: {
         valType: 'enumerated',
         values: ['stack', 'group', 'overlay', 'relative'],
