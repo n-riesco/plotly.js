@@ -1,17 +1,17 @@
 var Plotly = require('@lib/index');
-var Plots = require('@src/plots/plots');
+
+var Bar = require('@src/traces/bar');
 var Lib = require('@src/lib');
+var Plots = require('@src/plots/plots');
 
 var PlotlyInternal = require('@src/plotly');
 var Axes = PlotlyInternal.Axes;
-
-var Bar = require('@src/traces/bar');
 
 var createGraphDiv = require('../assets/create_graph_div');
 var destroyGraphDiv = require('../assets/destroy_graph_div');
 var customMatchers = require('../assets/custom_matchers');
 
-describe('bar supplyDefaults', function() {
+describe('Bar.supplyDefaults', function() {
     'use strict';
 
     var traceIn,
@@ -83,6 +83,96 @@ describe('bar supplyDefaults', function() {
         };
         supplyDefaults(traceIn, traceOut, defaultColor);
         expect(traceOut.width).toBeUndefined();
+    });
+
+    it('should coerce textposition to none', function() {
+        traceIn = {
+            y: [1, 2, 3]
+        };
+        supplyDefaults(traceIn, traceOut, defaultColor);
+        expect(traceOut.textposition).toBe('none');
+        expect(traceOut.texfont).toBeUndefined();
+        expect(traceOut.insidetexfont).toBeUndefined();
+        expect(traceOut.outsidetexfont).toBeUndefined();
+    });
+
+    it('should default textfont to layout.font', function() {
+        traceIn = {
+            textposition: 'inside',
+            y: [1, 2, 3]
+        };
+
+        var layout = {
+            font: {family: 'arial', color: '#AAA', size: 13}
+        };
+
+        supplyDefaults(traceIn, traceOut, defaultColor, layout);
+
+        expect(traceOut.textposition).toBe('inside');
+        expect(traceOut.textfont).toEqual(layout.font);
+        expect(traceOut.textfont).not.toBe(layout.font);
+        expect(traceOut.insidetextfont).toEqual(layout.font);
+        expect(traceOut.insidetextfont).not.toBe(layout.font);
+        expect(traceOut.insidetextfont).not.toBe(traceOut.textfont);
+        expect(traceOut.outsidetexfont).toBeUndefined();
+    });
+
+    it('should coerce text-related attributes', function() {
+        traceIn = {
+            y: [10, 20, 30, 40],
+            type: 'bar',
+            text: ['T1P1', 'T1P2', 'T1P3', 14],
+            textposition: ['inside', 'outside', 'BADVALUE'],
+            textfont: [{
+                family: '"comic sans"',
+                color: '#02A'
+            }, {
+                color: '#A20'
+            }],
+            insidetextfont: [
+                {size: 8},
+                {size: 12},
+                {size: 16}
+            ],
+            outsidetextfont: [
+                null,
+                {size: 24},
+                {size: 32}
+            ]
+        };
+
+        var layout = {
+            font: {family: 'arial', color: '#AAA', size: 13}
+        };
+
+        supplyDefaults(traceIn, traceOut, defaultColor, layout);
+
+        var expected = {
+            y: [10, 20, 30, 40],
+            type: 'bar',
+            text: ['T1P1', 'T1P2', 'T1P3', '14'],
+            textposition: ['inside', 'outside', 'none'],
+            textfont: [
+                {family: '"comic sans"', color: '#02A', size: 13},
+                {family: 'arial', color: '#A20', size: 13}
+            ],
+            insidetextfont: [
+                {family: '"comic sans"', color: '#02A', size: 8},
+                {family: 'arial', color: '#A20', size: 12},
+                {family: 'arial', color: '#AAA', size: 16}
+            ],
+            outsidetextfont: [
+                {family: '"comic sans"', color: '#02A', size: 13},
+                {family: 'arial', color: '#A20', size: 24},
+                {family: 'arial', color: '#AAA', size: 32}
+            ]
+        };
+
+        expect(traceOut.text).toEqual(expected.text);
+        expect(traceOut.textposition).toEqual(expected.textposition);
+        expect(traceOut.textfont).toEqual(expected.textfont);
+        expect(traceOut.insidetextfont).toEqual(expected.insidetextfont);
+        expect(traceOut.outsidetextfont).toEqual(expected.outsidetextfont);
     });
 });
 
@@ -611,6 +701,168 @@ describe('A bar plot', function() {
     });
 
     afterEach(destroyGraphDiv);
+
+    function getAllTraceNodes(node) {
+        return node.querySelectorAll('g.points');
+    }
+
+    function getAllBarNodes(node) {
+        return node.querySelectorAll('g.point');
+    }
+
+    function assertTextIsInsidePath(textNode, pathNode) {
+        var textBB = textNode.getBoundingClientRect(),
+            pathBB = pathNode.getBoundingClientRect();
+
+        expect(pathBB.left).not.toBeGreaterThan(textBB.left);
+        expect(textBB.right).not.toBeGreaterThan(pathBB.right);
+        expect(pathBB.top).not.toBeGreaterThan(textBB.top);
+        expect(textBB.bottom).not.toBeGreaterThan(pathBB.bottom);
+    }
+
+    function assertTextIsAbovePath(textNode, pathNode) {
+        var textBB = textNode.getBoundingClientRect(),
+            pathBB = pathNode.getBoundingClientRect();
+
+        expect(textBB.bottom).not.toBeGreaterThan(pathBB.top);
+    }
+
+    function assertTextIsBelowPath(textNode, pathNode) {
+        var textBB = textNode.getBoundingClientRect(),
+            pathBB = pathNode.getBoundingClientRect();
+
+        expect(pathBB.bottom).not.toBeGreaterThan(textBB.top);
+    }
+
+    function assertTextIsAfterPath(textNode, pathNode) {
+        var textBB = textNode.getBoundingClientRect(),
+            pathBB = pathNode.getBoundingClientRect();
+
+        expect(pathBB.right).not.toBeGreaterThan(textBB.left);
+    }
+
+    function assertTextIsBeforePath(textNode, pathNode) {
+        var textBB = textNode.getBoundingClientRect(),
+            pathBB = pathNode.getBoundingClientRect();
+
+        expect(textBB.right).not.toBeGreaterThan(pathBB.left);
+    }
+
+    it('should show bar texts (inside case)', function(done) {
+        var gd = createGraphDiv(),
+            data = [{
+                y: [10, 20, 30],
+                type: 'bar',
+                text: ['1', 'Very very very very very long bar text'],
+                textposition: 'inside',
+            }],
+            layout = {
+            };
+
+        Plotly.plot(gd, data, layout).then(function() {
+            var traceNodes = getAllTraceNodes(gd),
+                barNodes = getAllBarNodes(traceNodes[0]);
+
+            for(var i = 0; i < barNodes.length; i++) {
+                var barNode = barNodes[i],
+                    pathNode = barNode.querySelector('path'),
+                    textNode = barNode.querySelector('text');
+                if(textNode) assertTextIsInsidePath(textNode, pathNode);
+            }
+
+            done();
+        });
+    });
+
+    it('should show bar texts (outside case)', function(done) {
+        var gd = createGraphDiv(),
+            data = [{
+                y: [10, -20, 30],
+                type: 'bar',
+                text: ['1', 'Very very very very very long bar text'],
+                textposition: 'outside',
+            }],
+            layout = {
+                barmode: 'relative'
+            };
+
+        Plotly.plot(gd, data, layout).then(function() {
+            var traceNodes = getAllTraceNodes(gd),
+                barNodes = getAllBarNodes(traceNodes[0]);
+
+            for(var i = 0; i < barNodes.length; i++) {
+                var barNode = barNodes[i],
+                    pathNode = barNode.querySelector('path'),
+                    textNode = barNode.querySelector('text');
+                if(textNode) {
+                    if(data[0].y[i] > 0) assertTextIsAbovePath(textNode, pathNode);
+                    else assertTextIsBelowPath(textNode, pathNode);
+                }
+            }
+
+            done();
+        });
+    });
+
+    it('should show bar texts (horizontal case)', function(done) {
+        var gd = createGraphDiv(),
+            data = [{
+                x: [10, -20, 30],
+                type: 'bar',
+                text: ['Very very very very very long bar text', -20],
+                textposition: 'outside',
+            }],
+            layout = {
+            };
+
+        Plotly.plot(gd, data, layout).then(function() {
+            var traceNodes = getAllTraceNodes(gd),
+                barNodes = getAllBarNodes(traceNodes[0]);
+
+            for(var i = 0; i < barNodes.length; i++) {
+                var barNode = barNodes[i],
+                    pathNode = barNode.querySelector('path'),
+                    textNode = barNode.querySelector('text');
+                if(textNode) {
+                    if(data[0].x[i] > 0) assertTextIsAfterPath(textNode, pathNode);
+                    else assertTextIsBeforePath(textNode, pathNode);
+                }
+            }
+
+            done();
+        });
+    });
+
+    it('should show bar texts (barnorm case)', function(done) {
+        var gd = createGraphDiv(),
+            data = [{
+                x: [100, -100, 100],
+                type: 'bar',
+                text: [100, -100, 100],
+                textposition: 'outside',
+            }],
+            layout = {
+                barmode: 'relative',
+                barnorm: true
+            };
+
+        Plotly.plot(gd, data, layout).then(function() {
+            var traceNodes = getAllTraceNodes(gd),
+                barNodes = getAllBarNodes(traceNodes[0]);
+
+            for(var i = 0; i < barNodes.length; i++) {
+                var barNode = barNodes[i],
+                    pathNode = barNode.querySelector('path'),
+                    textNode = barNode.querySelector('text');
+                if(textNode) {
+                    if(data[0].x[i] > 0) assertTextIsAfterPath(textNode, pathNode);
+                    else assertTextIsBeforePath(textNode, pathNode);
+                }
+            }
+
+            done();
+        });
+    });
 
     it('should be able to restyle', function(done) {
         var gd = createGraphDiv(),
