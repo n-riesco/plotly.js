@@ -761,14 +761,20 @@ describe('A bar plot', function() {
 
         Plotly.plot(gd, data, layout).then(function() {
             var traceNodes = getAllTraceNodes(gd),
-                barNodes = getAllBarNodes(traceNodes[0]);
+                barNodes = getAllBarNodes(traceNodes[0]),
+                foundTextNodes;
 
             for(var i = 0; i < barNodes.length; i++) {
                 var barNode = barNodes[i],
                     pathNode = barNode.querySelector('path'),
                     textNode = barNode.querySelector('text');
-                if(textNode) assertTextIsInsidePath(textNode, pathNode);
+                if(textNode) {
+                    foundTextNodes = true;
+                    assertTextIsInsidePath(textNode, pathNode);
+                }
             }
+
+            expect(foundTextNodes).toBe(true);
 
             done();
         });
@@ -788,17 +794,21 @@ describe('A bar plot', function() {
 
         Plotly.plot(gd, data, layout).then(function() {
             var traceNodes = getAllTraceNodes(gd),
-                barNodes = getAllBarNodes(traceNodes[0]);
+                barNodes = getAllBarNodes(traceNodes[0]),
+                foundTextNodes;
 
             for(var i = 0; i < barNodes.length; i++) {
                 var barNode = barNodes[i],
                     pathNode = barNode.querySelector('path'),
                     textNode = barNode.querySelector('text');
                 if(textNode) {
+                    foundTextNodes = true;
                     if(data[0].y[i] > 0) assertTextIsAbovePath(textNode, pathNode);
                     else assertTextIsBelowPath(textNode, pathNode);
                 }
             }
+
+            expect(foundTextNodes).toBe(true);
 
             done();
         });
@@ -817,17 +827,21 @@ describe('A bar plot', function() {
 
         Plotly.plot(gd, data, layout).then(function() {
             var traceNodes = getAllTraceNodes(gd),
-                barNodes = getAllBarNodes(traceNodes[0]);
+                barNodes = getAllBarNodes(traceNodes[0]),
+                foundTextNodes;
 
             for(var i = 0; i < barNodes.length; i++) {
                 var barNode = barNodes[i],
                     pathNode = barNode.querySelector('path'),
                     textNode = barNode.querySelector('text');
                 if(textNode) {
+                    foundTextNodes = true;
                     if(data[0].x[i] > 0) assertTextIsAfterPath(textNode, pathNode);
                     else assertTextIsBeforePath(textNode, pathNode);
                 }
             }
+
+            expect(foundTextNodes).toBe(true);
 
             done();
         });
@@ -848,17 +862,21 @@ describe('A bar plot', function() {
 
         Plotly.plot(gd, data, layout).then(function() {
             var traceNodes = getAllTraceNodes(gd),
-                barNodes = getAllBarNodes(traceNodes[0]);
+                barNodes = getAllBarNodes(traceNodes[0]),
+                foundTextNodes;
 
             for(var i = 0; i < barNodes.length; i++) {
                 var barNode = barNodes[i],
                     pathNode = barNode.querySelector('path'),
                     textNode = barNode.querySelector('text');
                 if(textNode) {
+                    foundTextNodes = true;
                     if(data[0].x[i] > 0) assertTextIsAfterPath(textNode, pathNode);
                     else assertTextIsBeforePath(textNode, pathNode);
                 }
             }
+
+            expect(foundTextNodes).toBe(true);
 
             done();
         });
