@@ -2,14 +2,14 @@
     "data":[
         {
             "width":[1,0.8,0.6,0.4],
-            "text":[1,2,3,4],
+            "text":[1,2,3333333333,4],
 	    "textposition":"outside",
             "y":[1,2,3,4],
             "x":[1,2,3,4],
             "type":"bar"
         }, {
             "width":[0.4,0.6,0.8,1],
-            "text":["Three",2,"This bar is size one",0],
+            "text":["Three",2,"outside text",0],
 	    "textposition":"auto",
             "y":[3,2,1,0],
             "x":[1,2,3,4],
@@ -22,7 +22,7 @@
             "x":[1,2,3,4],
             "type":"bar"
         }, {
-            "text":[0,"very small size",-3,-2],
+            "text":[0,"outside text",-3,-2],
 	    "textposition":"auto",
             "y":[0,-0.25,-3,-2],
             "x":[1,2,3,4],
