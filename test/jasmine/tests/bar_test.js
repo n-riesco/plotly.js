@@ -857,7 +857,7 @@ describe('A bar plot', function() {
             }],
             layout = {
                 barmode: 'relative',
-                barnorm: true
+                barnorm: 'percent'
             };
 
         Plotly.plot(gd, data, layout).then(function() {
