@@ -1,10 +1,14 @@
 {
     "data":[
         {
+            "text":[100,125,150,175],
+	    "textposition":"outside",
             "base":4,
             "x":[3,2,1,0],
             "type":"bar"
         }, {
+            "text":[100,125,150,175],
+	    "textposition":"inside",
             "base":[7,6,5,4],
             "x":[1,2,3,4],
             "type":"bar"
