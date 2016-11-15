@@ -116,64 +116,6 @@ describe('Bar.supplyDefaults', function() {
         expect(traceOut.insidetextfont).not.toBe(traceOut.textfont);
         expect(traceOut.outsidetexfont).toBeUndefined();
     });
-
-    it('should coerce text-related attributes', function() {
-        traceIn = {
-            y: [10, 20, 30, 40],
-            type: 'bar',
-            text: ['T1P1', 'T1P2', 'T1P3', 14],
-            textposition: ['inside', 'outside', 'BADVALUE'],
-            textfont: [{
-                family: '"comic sans"',
-                color: '#02A'
-            }, {
-                color: '#A20'
-            }],
-            insidetextfont: [
-                {size: 8},
-                {size: 12},
-                {size: 16}
-            ],
-            outsidetextfont: [
-                null,
-                {size: 24},
-                {size: 32}
-            ]
-        };
-
-        var layout = {
-            font: {family: 'arial', color: '#AAA', size: 13}
-        };
-
-        supplyDefaults(traceIn, traceOut, defaultColor, layout);
-
-        var expected = {
-            y: [10, 20, 30, 40],
-            type: 'bar',
-            text: ['T1P1', 'T1P2', 'T1P3', '14'],
-            textposition: ['inside', 'outside', 'none'],
-            textfont: [
-                {family: '"comic sans"', color: '#02A', size: 13},
-                {family: 'arial', color: '#A20', size: 13}
-            ],
-            insidetextfont: [
-                {family: '"comic sans"', color: '#02A', size: 8},
-                {family: 'arial', color: '#A20', size: 12},
-                {family: 'arial', color: '#AAA', size: 16}
-            ],
-            outsidetextfont: [
-                {family: '"comic sans"', color: '#02A', size: 13},
-                {family: 'arial', color: '#A20', size: 24},
-                {family: 'arial', color: '#AAA', size: 32}
-            ]
-        };
-
-        expect(traceOut.text).toEqual(expected.text);
-        expect(traceOut.textposition).toEqual(expected.textposition);
-        expect(traceOut.textfont).toEqual(expected.textfont);
-        expect(traceOut.insidetextfont).toEqual(expected.insidetextfont);
-        expect(traceOut.outsidetextfont).toEqual(expected.outsidetextfont);
-    });
 });
 
 describe('heatmap calc / setPositions', function() {
@@ -762,6 +704,21 @@ describe('A bar plot', function() {
         expect(pathBB.right).not.toBeGreaterThan(textBB.left);
     }
 
+    var colorMap = {
+        'rgb(0, 0, 0)': 'black',
+        'rgb(255, 0, 0)': 'red',
+        'rgb(0, 128, 0)': 'green',
+        'rgb(0, 0, 255)': 'blue'
+    };
+    function assertTextFont(textNode, textFont, index) {
+        expect(textNode.style.fontFamily).toBe(textFont.family[index]);
+        expect(textNode.style.fontSize).toBe(textFont.size[index] + 'px');
+
+        var color = textNode.style.fill;
+        if(!colorMap[color]) colorMap[color] = color;
+        expect(colorMap[color]).toBe(textFont.color[index]);
+    }
+
     function assertTextIsBeforePath(textNode, pathNode) {
         var textBB = textNode.getBoundingClientRect(),
             pathBB = pathNode.getBoundingClientRect();
@@ -961,6 +918,88 @@ describe('A bar plot', function() {
             expect(cd[2][0].t.poffset).toBe(0);
             expect(cd[3][0].t.poffset).toBe(0);
             assertTraceField(cd, 't.bargroupwidth', [0.8, 0.8, 0.8, 0.8]);
+
+            done();
+        });
+    });
+
+    it('should coerce text-related attributes', function(done) {
+        var gd = createGraphDiv(),
+            data = [{
+                y: [10, 20, 30, 40],
+                type: 'bar',
+                text: ['T1P1', 'T1P2', 13, 14],
+                textposition: ['inside', 'outside', 'auto', 'BADVALUE'],
+                textfont: {
+                    family: ['"comic sans"'],
+                    color: ['red', 'green'],
+                },
+                insidetextfont: {
+                    size: [8, 12, 16],
+                    color: ['black'],
+                },
+                outsidetextfont: {
+                    size: [null, 24, 32]
+                }
+            }],
+            layout = {
+                font: {family: 'arial', color: 'blue', size: 13}
+            };
+
+        var expected = {
+            y: [10, 20, 30, 40],
+            type: 'bar',
+            text: ['T1P1', 'T1P2', '13', '14'],
+            textposition: ['inside', 'outside', 'none'],
+            textfont: {
+                family: ['"comic sans"', 'arial'],
+                color: ['red', 'green'],
+                size: [13, 13]
+            },
+            insidetextfont: {
+                family: ['"comic sans"', 'arial', 'arial'],
+                color: ['black', 'green', 'blue'],
+                size: [8, 12, 16]
+            },
+            outsidetextfont: {
+                family: ['"comic sans"', 'arial', 'arial'],
+                color: ['red', 'green', 'blue'],
+                size: [13, 24, 32]
+            }
+        };
+
+        Plotly.plot(gd, data, layout).then(function() {
+            var traceNodes = getAllTraceNodes(gd),
+                barNodes = getAllBarNodes(traceNodes[0]),
+                pathNodes = [
+                    barNodes[0].querySelector('path'),
+                    barNodes[1].querySelector('path'),
+                    barNodes[2].querySelector('path'),
+                    barNodes[3].querySelector('path')
+                ],
+                textNodes = [
+                    barNodes[0].querySelector('text'),
+                    barNodes[1].querySelector('text'),
+                    barNodes[2].querySelector('text'),
+                    barNodes[3].querySelector('text')
+                ],
+                i;
+
+            // assert bar texts
+            for(i = 0; i < 3; i++) {
+                expect(textNodes[i].textContent).toBe(expected.text[i]);
+            }
+
+            // assert bar positions
+            assertTextIsInsidePath(textNodes[0], pathNodes[0]); // inside
+            assertTextIsAbovePath(textNodes[1], pathNodes[1]); // outside
+            assertTextIsInsidePath(textNodes[2], pathNodes[2]); // auto -> inside
+            expect(textNodes[3]).toBe(null); // BADVALUE -> none
+
+            // assert fonts
+            assertTextFont(textNodes[0], expected.insidetextfont, 0);
+            assertTextFont(textNodes[1], expected.outsidetextfont, 1);
+            assertTextFont(textNodes[2], expected.insidetextfont, 2);
 
             done();
         });
