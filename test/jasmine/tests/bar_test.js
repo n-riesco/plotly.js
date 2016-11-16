@@ -919,6 +919,82 @@ describe('A bar plot', function() {
             expect(cd[3][0].t.poffset).toBe(0);
             assertTraceField(cd, 't.bargroupwidth', [0.8, 0.8, 0.8, 0.8]);
 
+            var traceNodes = getAllTraceNodes(gd),
+                trace0Bar3 = getAllBarNodes(traceNodes[0])[3],
+                path03 = trace0Bar3.querySelector('path'),
+                text03 = trace0Bar3.querySelector('text'),
+                trace1Bar2 = getAllBarNodes(traceNodes[1])[2],
+                path12 = trace1Bar2.querySelector('path'),
+                text12 = trace1Bar2.querySelector('text'),
+                trace2Bar0 = getAllBarNodes(traceNodes[2])[0],
+                path20 = trace2Bar0.querySelector('path'),
+                text20 = trace2Bar0.querySelector('text'),
+                trace3Bar0 = getAllBarNodes(traceNodes[3])[0],
+                path30 = trace3Bar0.querySelector('path'),
+                text30 = trace3Bar0.querySelector('text');
+
+            expect(text03.textContent).toBe('4');
+            expect(text12.textContent).toBe('outside text');
+            expect(text20.textContent).toBe('-1');
+            expect(text30.textContent).toBe('outside text');
+
+            assertTextIsAbovePath(text03, path03); // outside
+            assertTextIsAbovePath(text12, path12); // outside
+            assertTextIsInsidePath(text20, path20); // inside
+            assertTextIsBelowPath(text30, path30); // outside
+
+            return Plotly.restyle(gd, 'textposition', 'inside');
+        }).then(function() {
+            var cd = gd.calcdata;
+            assertPointField(cd, 'x', [
+                [1.5, 2.4, 3.3, 4.2], [1.2, 2.3, 3.4, 4.5],
+                [1.5, 2.5, 3.5, 4.5], [1.4, 2.4, 3.4, 4.4]]);
+            assertPointField(cd, 'y', [
+                [1, 2, 3, 4], [4, 4, 4, 4],
+                [-1, -3, -2, -4], [4, -3.25, -5, -6]]);
+            assertPointField(cd, 'b', [
+                [0, 0, 0, 0], [1, 2, 3, 4],
+                [0, 0, 0, 0], [4, -3, -2, -4]]);
+            assertPointField(cd, 's', [
+                [1, 2, 3, 4], [3, 2, 1, 0],
+                [-1, -3, -2, -4], [0, -0.25, -3, -2]]);
+            assertPointField(cd, 'p', [
+                [1, 2, 3, 4], [1, 2, 3, 4],
+                [1, 2, 3, 4], [1, 2, 3, 4]]);
+            assertArrayField(cd[0][0], 't.barwidth', [1, 0.8, 0.6, 0.4]);
+            assertArrayField(cd[1][0], 't.barwidth', [0.4, 0.6, 0.8, 1]);
+            expect(cd[2][0].t.barwidth).toBe(1);
+            expect(cd[3][0].t.barwidth).toBe(0.8);
+            expect(cd[0][0].t.poffset).toBe(0);
+            expect(cd[1][0].t.poffset).toBe(0);
+            expect(cd[2][0].t.poffset).toBe(0);
+            expect(cd[3][0].t.poffset).toBe(0);
+            assertTraceField(cd, 't.bargroupwidth', [0.8, 0.8, 0.8, 0.8]);
+
+            var traceNodes = getAllTraceNodes(gd),
+                trace0Bar3 = getAllBarNodes(traceNodes[0])[3],
+                path03 = trace0Bar3.querySelector('path'),
+                text03 = trace0Bar3.querySelector('text'),
+                trace1Bar2 = getAllBarNodes(traceNodes[1])[2],
+                path12 = trace1Bar2.querySelector('path'),
+                text12 = trace1Bar2.querySelector('text'),
+                trace2Bar0 = getAllBarNodes(traceNodes[2])[0],
+                path20 = trace2Bar0.querySelector('path'),
+                text20 = trace2Bar0.querySelector('text'),
+                trace3Bar0 = getAllBarNodes(traceNodes[3])[0],
+                path30 = trace3Bar0.querySelector('path'),
+                text30 = trace3Bar0.querySelector('text');
+
+            expect(text03.textContent).toBe('4');
+            expect(text12.textContent).toBe('outside text');
+            expect(text20.textContent).toBe('-1');
+            expect(text30.textContent).toBe('outside text');
+
+            assertTextIsInsidePath(text03, path03); // inside
+            assertTextIsInsidePath(text12, path12); // inside
+            assertTextIsInsidePath(text20, path20); // inside
+            assertTextIsInsidePath(text30, path30); // inside
+
             done();
         });
     });
