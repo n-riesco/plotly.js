@@ -939,7 +939,7 @@ describe('A bar plot', function() {
             expect(text30.textContent).toBe('outside text');
 
             assertTextIsAbovePath(text03, path03); // outside
-            assertTextIsAbovePath(text12, path12); // outside
+            assertTextIsInsidePath(text12, path12); // inside
             assertTextIsInsidePath(text20, path20); // inside
             assertTextIsBelowPath(text30, path30); // outside
 
