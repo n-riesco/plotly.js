@@ -179,6 +179,24 @@ function setGroupPositionsInStackOrRelativeMode(gd, pa, sa, calcTraces) {
 
     // set bar bases and sizes, and update size axis
     stackBars(gd, sa, sieve);
+
+    // flag the outmost bar (for text display purposes)
+    for(var i = 0; i < calcTraces.length; i++) {
+        var calcTrace = calcTraces[i];
+
+        for(var j = 0; j < calcTrace.length; j++) {
+            var bar = calcTrace[j];
+
+            if(!isNumeric(bar.s)) continue;
+
+            var isOutmostBar = ((bar.b + bar.s) === sieve.get(bar.p, bar.s));
+            if(isOutmostBar) bar._outmost = true;
+        }
+    }
+
+    // Note that marking the outmost bars has to be done
+    // before `normalizeBars` changes `bar.b` and `bar.s`.
+    if(barnorm) normalizeBars(gd, sa, sieve);
 }
 
 
@@ -485,8 +503,8 @@ function stackBars(gd, sa, sieve) {
             if(!isNumeric(bar.s)) continue;
 
             // stack current bar and get previous sum
-            var barBase = sieve.put(bar.p, bar.s),
-                barTop = barBase + bar.s;
+            var barBase = sieve.put(bar.p, bar.b + bar.s),
+                barTop = barBase + bar.b + bar.s;
 
             // store the bar base and top in each calcdata item
             bar.b = barBase;
@@ -506,12 +524,7 @@ function stackBars(gd, sa, sieve) {
     }
 
     // if barnorm is set, let normalizeBars update the axis range
-    if(barnorm) {
-        normalizeBars(gd, sa, sieve);
-    }
-    else {
-        Axes.expand(sa, [sMin, sMax], {tozero: true, padded: true});
-    }
+    if(!barnorm) Axes.expand(sa, [sMin, sMax], {tozero: true, padded: true});
 }
 
 
@@ -524,7 +537,7 @@ function sieveBars(gd, sa, sieve) {
         for(var j = 0; j < trace.length; j++) {
             var bar = trace[j];
 
-            if(isNumeric(bar.s)) sieve.put(bar.p, bar.s);
+            if(isNumeric(bar.s)) sieve.put(bar.p, bar.b + bar.s);
         }
     }
 }
