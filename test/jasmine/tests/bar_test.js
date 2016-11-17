@@ -1093,22 +1093,22 @@ describe('bar hover', function() {
 
     afterEach(destroyGraphDiv);
 
-    function getPointData(gd) {
+    function getPointData(gd, index) {
         var cd = gd.calcdata,
             subplot = gd._fullLayout._plots.xy;
 
         return {
             index: false,
             distance: 20,
-            cd: cd[0],
-            trace: cd[0][0].trace,
+            cd: cd[index || 0],
+            trace: cd[index || 0][0].trace,
             xa: subplot.xaxis,
             ya: subplot.yaxis
         };
     }
 
-    function _hover(gd, xval, yval, closest) {
-        var pointData = getPointData(gd);
+    function _hover(gd, xval, yval, closest, traceIndex) {
+        var pointData = getPointData(gd, traceIndex);
         var pt = Bar.hoverPoints(pointData, xval, yval, closest)[0];
 
         return {
@@ -1190,6 +1190,59 @@ describe('bar hover', function() {
         });
     });
 
+    describe('with barmode *stack*', function() {
+        beforeAll(function(done) {
+            gd = createGraphDiv();
+
+            var mock = Lib.extendDeep({}, require('@mocks/bar_stack-with-gaps.json'));
+
+            Plotly.plot(gd, mock.data, mock.layout).then(done);
+        });
+
+        it('should return the correct hover point data (case x)', function() {
+            var subplot = gd._fullLayout._plots.xy,
+                xa = subplot.xaxis,
+                ya = subplot.yaxis,
+                traceIndex = 4,
+                barIndex = 3,
+                xc = xa.d2c('D'),
+                yc = 9,         // bar end is at 9
+                xLabelVal = xc,
+                yLabelVal = 8,  // bar size is 8
+                barDelta = 1 * 0.8 / 2,
+                barPos = xc,
+                x0 = xa.c2p(barPos - barDelta, true),
+                x1 = xa.c2p(barPos + barDelta, true),
+                y0 = ya.c2p(yc, true),
+                y1 = y0,
+                out = _hover(gd, xc - 0.1, yc - 0.1, 'x', traceIndex);
+
+            expect(out.style).toEqual([barIndex, '#9467bd', xLabelVal, yLabelVal]);
+            assertPos(out.pos, [x0, x1, y0, y1]);
+        });
+
+        it('should return the correct hover point data (case closest)', function() {
+            var subplot = gd._fullLayout._plots.xy,
+                xa = subplot.xaxis,
+                ya = subplot.yaxis,
+                traceIndex = 4,
+                barIndex = 3,
+                xc = xa.d2c('D'),
+                yc = 9,         // bar end is at 9
+                xLabelVal = xc,
+                yLabelVal = 8,  // bar size is 8
+                barDelta = 1 * 0.8 / 2,
+                barPos = xc,
+                x0 = xa.c2p(barPos - barDelta, true),
+                x1 = xa.c2p(barPos + barDelta, true),
+                y0 = ya.c2p(yc, true),
+                y1 = y0,
+                out = _hover(gd, xc - 0.1, yc - 0.1, 'closest', traceIndex);
+
+            expect(out.style).toEqual([barIndex, '#9467bd', xLabelVal, yLabelVal]);
+            assertPos(out.pos, [x0, x1, y0, y1]);
+        });
+    });
 });
 
 function mockBarPlot(dataWithoutTraceType, layout) {
