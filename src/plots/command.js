@@ -41,9 +41,9 @@ exports.manageCommandObserver = function(gd, container, commandList, onchange) {
     }
 
     // Either create or just recompute this:
-    ret.lookupTable = {};
+    ret.bindingsByValue = {};
 
-    var binding = exports.hasSimpleAPICommandBindings(gd, commandList, ret.lookupTable);
+    var binding = exports.hasSimpleAPICommandBindings(gd, commandList, ret.bindingsByValue);
 
     if(container && container._commandObserver) {
         if(!binding) {
@@ -78,14 +78,14 @@ exports.manageCommandObserver = function(gd, container, commandList, onchange) {
             if(update.changed && onchange) {
                 // Disable checks for the duration of this command in order to avoid
                 // infinite loops:
-                if(ret.lookupTable[update.value] !== undefined) {
+                if(ret.bindingsByValue[update.value] !== undefined) {
                     ret.disable();
                     Promise.resolve(onchange({
                         value: update.value,
                         type: binding.type,
                         prop: binding.prop,
                         traces: binding.traces,
-                        index: ret.lookupTable[update.value]
+                        index: ret.bindingsByValue[update.value]
                     })).then(ret.enable, ret.enable);
                 }
             }
@@ -116,7 +116,7 @@ exports.manageCommandObserver = function(gd, container, commandList, onchange) {
         // is a start
         Lib.warn('Unable to automatically bind plot updates to API command');
 
-        ret.lookupTable = {};
+        ret.bindingsByValue = {};
         ret.remove = function() {};
     }
 
