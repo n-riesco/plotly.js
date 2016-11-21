@@ -42,8 +42,10 @@ exports.manageCommandObserver = function(gd, container, commandList, onchange) {
 
     // Either create or just recompute this:
     ret.bindingsByValue = {};
+    ret.valueByBindings = {};
 
-    var binding = exports.hasSimpleAPICommandBindings(gd, commandList, ret.bindingsByValue);
+    var binding = exports.hasSimpleAPICommandBindings(gd, commandList,
+            ret.bindingsByValue, ret.valueByBindings);
 
     if(container && container._commandObserver) {
         if(!binding) {
@@ -78,14 +80,15 @@ exports.manageCommandObserver = function(gd, container, commandList, onchange) {
             if(update.changed && onchange) {
                 // Disable checks for the duration of this command in order to avoid
                 // infinite loops:
-                if(ret.bindingsByValue[update.value] !== undefined) {
+                var index = getCommandIndex(ret, update.value);
+                if(index !== undefined) {
                     ret.disable();
                     Promise.resolve(onchange({
                         value: update.value,
                         type: binding.type,
                         prop: binding.prop,
                         traces: binding.traces,
-                        index: ret.bindingsByValue[update.value]
+                        index: index
                     })).then(ret.enable, ret.enable);
                 }
             }
@@ -117,6 +120,7 @@ exports.manageCommandObserver = function(gd, container, commandList, onchange) {
         Lib.warn('Unable to automatically bind plot updates to API command');
 
         ret.bindingsByValue = {};
+        ret.valueByBindings = {};
         ret.remove = function() {};
     }
 
@@ -135,6 +139,39 @@ exports.manageCommandObserver = function(gd, container, commandList, onchange) {
     return ret;
 };
 
+function getCommandIndex(binding, value) {
+    if(Array.isArray(value)) {
+        var commandIndex;
+
+        if(value.length === 1) {
+            commandIndex = binding.bindingsByValue[value[0]];
+            if(commandIndex !== undefined) return commandIndex;
+        }
+
+        for(commandIndex in binding.valueByBindings) {
+            var commandValue = binding.valueByBindings[commandIndex];
+            if(commandValue.length !== value.length) continue;
+
+            var traces = binding.traces,
+                areEqual = true;
+            for(var i = 0; i < value.length; i++) {
+                if(value[traces ? traces[i] : i] !== commandValue[i]) {
+                    areEqual = false;
+                    break;
+                }
+            }
+
+            if(areEqual) return +commandIndex;
+        }
+
+        // if not found, return undefined
+        return;
+    }
+    else {
+        return binding.bindingsByValue[value];
+    }
+}
+
 /*
  * This function checks to see if an array of objects containing
  * method and args properties is compatible with automatic two-way
@@ -144,13 +181,12 @@ exports.manageCommandObserver = function(gd, container, commandList, onchange) {
  *   2. only one property may be affected
  *   3. the same property must be affected by all commands
  */
-exports.hasSimpleAPICommandBindings = function(gd, commandList, bindingsByValue) {
-    var i;
+exports.hasSimpleAPICommandBindings = function(gd, commandList, bindingsByValue, valueByBindings) {
     var n = commandList.length;
 
     var refBinding;
 
-    for(i = 0; i < n; i++) {
+    for(var i = 0; i < n; i++) {
         var binding;
         var command = commandList[i];
         var method = command.method;
@@ -201,13 +237,11 @@ exports.hasSimpleAPICommandBindings = function(gd, commandList, bindingsByValue)
         binding = bindings[0];
         var value = binding.value;
         if(Array.isArray(value)) {
-            if(value.length === 1) {
-                value = value[0];
-            } else {
-                return false;
-            }
+            // an array value can't be an index,
+            // use valueByBindings instead
+            if(valueByBindings) valueByBindings[i] = value;
         }
-        if(bindingsByValue) {
+        else if(bindingsByValue) {
             bindingsByValue[value] = i;
         }
     }
@@ -216,31 +250,68 @@ exports.hasSimpleAPICommandBindings = function(gd, commandList, bindingsByValue)
 };
 
 function bindingValueHasChanged(gd, binding, cache) {
-    var container, value, obj;
-    var changed = false;
-
     if(binding.type === 'data') {
-        // If it's data, we need to get a trace. Based on the limited scope
-        // of what we cover, we can just take the first trace from the list,
-        // or otherwise just the first trace:
-        container = gd._fullData[binding.traces !== null ? binding.traces[0] : 0];
-    } else if(binding.type === 'layout') {
-        container = gd._fullLayout;
-    } else {
-        return false;
+        return dataBindingValueHasChanged(gd, binding, cache);
     }
 
-    value = Lib.nestedProperty(container, binding.prop).get();
+    if(binding.type === 'layout') {
+        return layoutBindingValueHasChanged(gd, binding, cache);
+    }
 
-    obj = cache[binding.type] = cache[binding.type] || {};
+    return false;
+}
 
-    if(obj.hasOwnProperty(binding.prop)) {
-        if(obj[binding.prop] !== value) {
+function layoutBindingValueHasChanged(gd, binding, cache) {
+    // get value from container
+    var container = gd._fullLayout,
+        value = Lib.nestedProperty(container, binding.prop).get();
+
+    // update value in cache
+    var thisCache = cache[binding.type] = cache[binding.type] || {},
+        changed = false;
+
+    if(!thisCache.hasOwnProperty(binding.prop)) {
+        if(thisCache[binding.prop] !== value) {
             changed = true;
         }
     }
 
-    obj[binding.prop] = value;
+    thisCache[binding.prop] = value;
+
+    return {
+        changed: changed,
+        value: value
+    };
+}
+
+function dataBindingValueHasChanged(gd, binding, cache) {
+    // get value from container
+    var fullData = gd._fullData,
+        value = [],
+        i;
+    for(i = 0; i < fullData.length; i++) {
+        value.push(Lib.nestedProperty(fullData[i], binding.prop).get());
+    }
+
+    // update value in cache
+    var thisCache = cache[binding.type] = cache[binding.type] || {},
+        changed = false;
+
+    if(thisCache.hasOwnProperty(binding.prop)) {
+        var cachedValue = thisCache[binding.prop];
+        if(Array.isArray(cachedValue)) {
+            for(i = 0; i < fullData.length; i++) {
+                if(value[i] !== cachedValue[i]) changed = true;
+            }
+        }
+        else {
+            for(i = 0; i < fullData.length; i++) {
+                if(value[i] !== cachedValue) changed = true;
+            }
+        }
+    }
+
+    thisCache[binding.prop] = value;
 
     return {
         changed: changed,
