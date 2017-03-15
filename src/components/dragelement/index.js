@@ -140,8 +140,7 @@ dragElement.init = function init(options) {
         if(options.doneFn) options.doneFn(gd._dragged, numClicks, e);
 
         if(!gd._dragged) {
-            var e2 = document.createEvent('MouseEvents');
-            e2.initEvent('click', true, true);
+            var e2 = new MouseEvent('click', e);
             initialTarget.dispatchEvent(e2);
         }
 
