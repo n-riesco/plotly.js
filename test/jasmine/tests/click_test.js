@@ -39,6 +39,17 @@ describe('Test click interactions:', function() {
 
     afterEach(destroyGraphDiv);
 
+    function move(fromX, fromY, toX, toY, delay) {
+        return new Promise(function(resolve) {
+            mouseEvent('mousemove', fromX, fromY);
+
+            setTimeout(function() {
+                mouseEvent('mousemove', toX, toY);
+                resolve();
+            }, delay || DBLCLICKDELAY / 4);
+        });
+    }
+
     function drag(fromX, fromY, toX, toY, delay) {
         return new Promise(function(resolve) {
             mouseEvent('mousemove', fromX, fromY);
@@ -87,6 +98,10 @@ describe('Test click interactions:', function() {
             expect(pt.pointNumber).toEqual(11);
             expect(pt.x).toEqual(0.125);
             expect(pt.y).toEqual(2.125);
+
+            var evt = futureData.event;
+            expect(evt.clientX).toEqual(pointPos[0]);
+            expect(evt.clientY).toEqual(pointPos[1]);
         });
     });
 
@@ -191,6 +206,46 @@ describe('Test click interactions:', function() {
             expect(pt.pointNumber).toEqual(11);
             expect(pt.x).toEqual(0.125);
             expect(pt.y).toEqual(2.125);
+
+            var evt = futureData.event;
+            expect(evt.clientX).toEqual(pointPos[0]);
+            expect(evt.clientY).toEqual(pointPos[1]);
+        });
+    });
+
+    describe('plotly_unhover event with hoverinfo set to none', function() {
+        var futureData;
+
+        beforeEach(function(done) {
+
+            var modifiedMockCopy = Lib.extendDeep({}, mockCopy);
+            modifiedMockCopy.data[0].hoverinfo = 'none';
+            Plotly.plot(gd, modifiedMockCopy.data, modifiedMockCopy.layout)
+                .then(done);
+
+            gd.on('plotly_unhover', function(data) {
+                futureData = data;
+            });
+        });
+
+        it('should contain the correct fields despite hoverinfo: "none"', function(done) {
+            move(pointPos[0], pointPos[1], blankPos[0], blankPos[1]).then(function() {
+                expect(futureData.points.length).toEqual(1);
+
+                var pt = futureData.points[0];
+                expect(Object.keys(pt)).toEqual([
+                    'data', 'fullData', 'curveNumber', 'pointNumber',
+                    'x', 'y', 'xaxis', 'yaxis'
+                ]);
+                expect(pt.curveNumber).toEqual(0);
+                expect(pt.pointNumber).toEqual(11);
+                expect(pt.x).toEqual(0.125);
+                expect(pt.y).toEqual(2.125);
+
+                var evt = futureData.event;
+                expect(evt.clientX).toEqual(blankPos[0]);
+                expect(evt.clientY).toEqual(blankPos[1]);
+            }).then(done);
         });
     });
 
