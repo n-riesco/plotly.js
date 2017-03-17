@@ -1067,6 +1067,28 @@ describe('Test click interactions on a pie plot:', function() {
             });
         });
     });
+
+    describe('hover events', function() {
+        var futureData;
+
+        beforeEach(function(done) {
+            Plotly.plot(gd, mockCopy.data, mockCopy.layout).then(done);
+
+            gd.on('plotly_hover', function(data) {
+                futureData = data;
+            });
+        });
+
+        it('should contain the correct fields', function() {
+            mouseEvent('mouseover', pointPos[0], pointPos[1]);
+
+            var point0 = futureData.points[0],
+                evt = futureData.event;
+            expect(point0).toEqual(evt, 'points');
+            expect(evt.clientX).toEqual(pointPos[0], 'event.clientX');
+            expect(evt.clientY).toEqual(pointPos[1], 'event.clientY');
+        });
+    });
 });
 
 
