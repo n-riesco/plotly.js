@@ -145,7 +145,7 @@ module.exports = function plot(gd, cdpie) {
                 function handleClick() {
                     gd._hoverdata = [pt];
                     gd._hoverdata.trace = cd.trace;
-                    Fx.click(gd, { target: true });
+                    Fx.click(gd, d3.event);
                 }
 
                 slicePath.enter().append('path')
