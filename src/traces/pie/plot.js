@@ -85,7 +85,9 @@ module.exports = function plot(gd, cdpie) {
                     slicePath = sliceTop.selectAll('path.surface').data([pt]),
                     hasHoverData = false;
 
-                function handleMouseOver(evt) {
+                function handleMouseOver() {
+                    var evt = d3.event;
+
                     // in case fullLayout or fullData has changed without a replot
                     var fullLayout2 = gd._fullLayout,
                         trace2 = gd._fullData[trace.index],
