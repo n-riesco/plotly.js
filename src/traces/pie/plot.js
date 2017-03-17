@@ -133,8 +133,11 @@ module.exports = function plot(gd, cdpie) {
                     hasHoverData = true;
                 }
 
-                function handleMouseOut(evt) {
+                function handleMouseOut() {
+                    var evt = d3.event;
+
                     gd.emit('plotly_unhover', {
+                        event: evt,
                         points: [evt]
                     });
 
