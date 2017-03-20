@@ -2,7 +2,7 @@ var Plotly = require('@lib/index');
 var Lib = require('@src/lib');
 var Drawing = require('@src/components/drawing');
 var DBLCLICKDELAY = require('@src/constants/interactions').DBLCLICKDELAY;
-var HOVERMINTIME = 50;
+var HOVERMINTIME = require('@src/plots/cartesian/constants').HOVERMINTIME;
 
 var d3 = require('d3');
 var createGraphDiv = require('../assets/create_graph_div');

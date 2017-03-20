@@ -11,7 +11,7 @@ var customMatchers = require('../assets/custom_matchers');
 
 var mouseEvent = require('../assets/mouse_event');
 var click = require('../assets/click');
-var HOVERMINTIME = 50;
+var HOVERMINTIME = require('@src/plots/cartesian/constants').HOVERMINTIME;
 
 function move(fromX, fromY, toX, toY, delay) {
     return new Promise(function(resolve) {
