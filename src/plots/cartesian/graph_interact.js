@@ -414,9 +414,10 @@ function hover(gd, evt, subplot) {
 
         // [x|y]px: the pixels (from top left) of the mouse location
         // on the currently selected plot area
-        var xpx, ypx;
+        var hasUserCalledHover = ('xpx' in evt || 'ypx' in evt),
+            xpx, ypx;
 
-        if('xpx' in evt || 'ypx' in evt) {
+        if(hasUserCalledHover) {
             if('xpx' in evt) xpx = evt.xpx;
             else xpx = xaArray[0]._length / 2;
 
